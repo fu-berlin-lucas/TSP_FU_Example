@@ -12,7 +12,12 @@ def solve_tsp(city_distances, cities):
         model.addConstr(gp.quicksum(vars.select(city, '*')) == 1)
         model.addConstr(gp.quicksum(vars.select('*', city)) == 1)
     
-    model.setObjective(gp.quicksum(vars), gp.GRB.MINIMIZE)
+    #Die Variablen sind durch den obj = city_distances[city_distance] schon in der Zielfunktion und es muss
+    #nur die Art des Zielfunktion (minimize) definiert werden; alternativ muss die Variable noch mit ihrer Distanz
+    #gewichtet werden. model.setObjective überschreibt alle vorherigen Zielfunktionswerte.
+    #Alternativ geht also auch:
+    #model.setObjective(gp.quicksum(vars[(from_city, to_city)] *city_distances[(from_city, to_city)] for from_city, to_city in vars.keys() ), gp.GRB.MINIMIZE)
+    model.modelSense = gp.GRB.MINIMIZE
     model.optimize()
     
     route = []
@@ -39,15 +44,16 @@ def solve_tsp(city_distances, cities):
             if len(possible_sub_tour) == len(route):
                 return route
         
-
-    while len(get_sub_tour(route)) != len(route):
-        sub_tour = get_sub_tour(route)
-        model.addConstr(gp.quicksum(vars.select(sub_tour)) <= len(sub_tour) - 1)
+    sub_tour = get_sub_tour(route)
+    while sub_tour != len(route):
+        model.addConstr(gp.quicksum(vars[from_city, to_city] for from_city, to_city in sub_tour) <= len(sub_tour) - 1)
+        model.update()
         model.optimize()
         route = []
         for key in vars.keys():
             if vars[key].x > 0.1: 
                 route.append(key)
+        sub_tour = get_sub_tour(route)
         
 
 
