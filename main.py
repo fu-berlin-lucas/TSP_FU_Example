@@ -36,6 +36,7 @@ if __name__ == '__main__':
 
         # Add lines for the route
         route_coordinates = [city_data[city[0]] for city in route]
+        route_coordinates.append(route_coordinates[0])
         folium.PolyLine(route_coordinates, color="red", weight=2.5, opacity=1).add_to(m)
 
         # Display the map
