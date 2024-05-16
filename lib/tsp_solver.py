@@ -29,23 +29,32 @@ def solve_tsp(city_distances, cities):
         for city_tuple in route:
             if city == city_tuple[0]:
                 return city_tuple
-        raise Exception('City not found in route')
+        return None
     
-    def get_sub_tour(route):
+    def get_shortest_sub_tour(_route):
+        route = _route[:]
+        shortest_sub_tour = []
         possible_sub_tour = []
         possible_sub_tour.append(route[0])
-        next_tuple = find_next_arc(route,route[0][1])
-        possible_sub_tour.append(next_tuple)
-        while True:
+        route.remove(route[0])
+        while len(route) > 0:
             next_tuple = find_next_arc(route, possible_sub_tour[-1][1])
-            if next_tuple in possible_sub_tour:
-                return possible_sub_tour
+            if next_tuple is None:
+                if len(possible_sub_tour) < len(shortest_sub_tour) or len(shortest_sub_tour)==0:
+                    shortest_sub_tour = possible_sub_tour
+                    if len(shortest_sub_tour) == 2:
+                        return shortest_sub_tour
+                possible_sub_tour = [route[0]]
+                route.remove(route[0])
+                continue
             possible_sub_tour.append(next_tuple)
-            if len(possible_sub_tour) == len(route):
-                return route
-        
-    sub_tour = get_sub_tour(route)
-    while sub_tour != len(route):
+            route.remove(next_tuple)
+        if len(shortest_sub_tour) == 0:
+            return possible_sub_tour
+        return shortest_sub_tour
+
+    sub_tour = get_shortest_sub_tour(route)
+    while len(sub_tour) != len(route):
         model.addConstr(gp.quicksum(vars[from_city, to_city] for from_city, to_city in sub_tour) <= len(sub_tour) - 1)
         model.update()
         model.optimize()
@@ -53,10 +62,8 @@ def solve_tsp(city_distances, cities):
         for key in vars.keys():
             if vars[key].x > 0.1: 
                 route.append(key)
-        sub_tour = get_sub_tour(route)
-        
-
+        sub_tour = get_shortest_sub_tour(route)
 
     print('Done...')
-    return route
+    return sub_tour
     
